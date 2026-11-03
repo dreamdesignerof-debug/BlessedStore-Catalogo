@@ -1,0 +1,234 @@
+
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Redefinir senha | Blessed Store</title>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      background: #050b1f;
+      color: #e6edff;
+      font: 16px system-ui, sans-serif;
+    }
+
+    main {
+      width: min(100%, 440px);
+      padding: 28px;
+      background: #0d1a3a;
+      border: 1px solid #24416d;
+      border-radius: 18px;
+    }
+
+    h1 { margin-top: 0; }
+
+    label {
+      display: block;
+      margin: 16px 0 6px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #456084;
+      border-radius: 9px;
+      background: #07122b;
+      color: white;
+      font: inherit;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 20px;
+      padding: 13px;
+      border: 0;
+      border-radius: 9px;
+      background: #38bdf8;
+      color: #061326;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:disabled { opacity: .5; }
+
+    #status {
+      margin-top: 18px;
+      padding: 12px;
+      background: #142747;
+      border-radius: 9px;
+      white-space: pre-wrap;
+    }
+
+    .error { background: #401e2b !important; }
+    .success { background: #123c32 !important; }
+    .hidden { display: none; }
+  </style>
+</head>
+
+<body>
+<main>
+  <h1>Redefinir senha</h1>
+  <p>Crie uma nova senha para sua conta Blessed Store.</p>
+
+  <form id="form" class="hidden">
+    <label for="password">Nova senha</label>
+    <input
+      id="password"
+      type="password"
+      minlength="8"
+      autocomplete="new-password"
+      required
+    >
+
+    <label for="confirm">Confirme a senha</label>
+    <input
+      id="confirm"
+      type="password"
+      minlength="8"
+      autocomplete="new-password"
+      required
+    >
+
+    <button id="save" type="submit">Salvar nova senha</button>
+  </form>
+
+  <div id="status">Validando link de recuperação...</div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.min.js"></script>
+
+<script>
+(async function () {
+  const SUPABASE_URL =
+    "https://wdetfogymnbnbhaulhxv.supabase.co";
+
+  const SUPABASE_KEY =
+    "sb_publishable_2_SbUgb59iK3K-Vfc5xwqA_YVjfYK6";
+
+  const sb = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY,
+    {
+      auth: {
+        detectSessionInUrl: true,
+        persistSession: true,
+        autoRefreshToken: true
+      }
+    }
+  );
+
+  const form = document.getElementById("form");
+  const status = document.getElementById("status");
+  const save = document.getElementById("save");
+
+  let recoveryReady = false;
+
+  function mensagem(texto, tipo = "") {
+    status.textContent = texto;
+    status.className = tipo;
+    status.id = "status";
+  }
+
+  function mostrarFormulario() {
+    recoveryReady = true;
+    form.classList.remove("hidden");
+    mensagem("Link validado! Escolha sua nova senha.");
+  }
+
+  // Verifica se o link de recuperação foi reconhecido
+  const { data, error } = await sb.auth.getSession();
+
+  if (error) {
+    mensagem("Erro ao validar o link: " + error.message, "error");
+    return;
+  }
+
+  if (data.session) {
+    mostrarFormulario();
+  } else {
+    const params = new URLSearchParams(
+      window.location.hash.substring(1)
+    );
+
+    if (params.get("error_code")) {
+      mensagem(
+        "O link expirou ou é inválido. Solicite um novo e-mail.",
+        "error"
+      );
+    } else {
+      mensagem(
+        "Abra esta página pelo link de recuperação enviado pelo Supabase.",
+        "error"
+      );
+    }
+  }
+
+  // Detecta o evento de recuperação do Supabase
+  sb.auth.onAuthStateChange((event, session) => {
+    if (event === "PASSWORD_RECOVERY" && session) {
+      mostrarFormulario();
+    }
+  });
+
+  // Atualiza a senha
+  form.addEventListener("submit", async function (event) {
+    event.preventDefault();
+
+    if (!recoveryReady) {
+      mensagem("Sessão de recuperação inválida.", "error");
+      return;
+    }
+
+    const senha = document.getElementById("password").value;
+    const confirmacao = document.getElementById("confirm").value;
+
+    if (senha.length < 8) {
+      mensagem("A senha precisa ter pelo menos 8 caracteres.", "error");
+      return;
+    }
+
+    if (senha !== confirmacao) {
+      mensagem("As senhas não coincidem.", "error");
+      return;
+    }
+
+    save.disabled = true;
+    save.textContent = "Salvando...";
+
+    const { error } = await sb.auth.updateUser({
+      password: senha
+    });
+
+    save.disabled = false;
+    save.textContent = "Salvar nova senha";
+
+    if (error) {
+      mensagem("Erro ao alterar senha: " + error.message, "error");
+      return;
+    }
+
+    form.classList.add("hidden");
+
+    mensagem(
+      "Senha alterada com sucesso! Agora você pode entrar no painel com a nova senha.",
+      "success"
+    );
+  });
+
+})().catch(function (error) {
+  document.getElementById("status").textContent =
+    "Erro inesperado: " + error.message;
+});
+</script>
+
+</body>
+</html>
