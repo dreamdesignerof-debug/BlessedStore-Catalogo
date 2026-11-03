@@ -75,4 +75,208 @@ a{color:#93c5fd}
 (async () => {
   const URL = "https://wdetfogymnbnbhaulhxv.supabase.co";
 
-  const KEY = "sb_publishable_2_SbUgb59iK3K-Vfc5xwqA_YVjf
+  const KEY = "sb_publishable_2_SbUgb59iK3K-Vfc5xwqA_YVjfYKJ6";
+
+  const sb = window.supabase.createClient(URL, KEY, {
+    auth: {
+      flowType: "implicit",
+      detectSessionInUrl: true,
+      persistSession: true,
+      autoRefreshToken: true
+    }
+  });
+
+  const $ = id => document.getElementById(id);
+
+  let recoveryAuthorized = false;
+  let initializationStarted = false;
+
+  function showStatus(message, type = "") {
+    $("status").textContent = message;
+    $("status").className = "status " + type;
+  }
+
+  function showPasswordForm() {
+    recoveryAuthorized = true;
+    $("passwordForm").classList.remove("hide");
+
+    showStatus(
+      "Link de recuperação validado! Crie sua nova senha."
+    );
+  }
+
+  function getParams() {
+    const hash = new URLSearchParams(
+      window.location.hash.replace(/^#/, "")
+    );
+
+    const query = new URLSearchParams(window.location.search);
+
+    return {
+      hash,
+      query,
+      accessToken:
+        hash.get("access_token") ||
+        query.get("access_token"),
+      refreshToken:
+        hash.get("refresh_token") ||
+        query.get("refresh_token"),
+      type:
+        hash.get("type") ||
+        query.get("type")
+    };
+  }
+
+  async function initialize() {
+    if (initializationStarted) return;
+    initializationStarted = true;
+
+    try {
+      const params = getParams();
+
+      // Link tradicional: tokens no fragmento da URL.
+      if (params.accessToken && params.refreshToken) {
+        const { data, error } = await sb.auth.setSession({
+          access_token: params.accessToken,
+          refresh_token: params.refreshToken
+        });
+
+        if (error) throw error;
+
+        if (!data.session) {
+          throw new Error(
+            "O Supabase não confirmou a sessão de recuperação."
+          );
+        }
+
+        // O link precisa indicar recuperação de senha.
+        if (params.type && params.type !== "recovery") {
+          throw new Error(
+            "Este link não é de recuperação de senha."
+          );
+        }
+
+        showPasswordForm();
+        return;
+      }
+
+      // Fluxo PKCE: código na query string.
+      const code = params.query.get("code");
+
+      if (code) {
+        const { data, error } =
+          await sb.auth.exchangeCodeForSession(code);
+
+        if (error) throw error;
+
+        if (!data.session) {
+          throw new Error(
+            "Não foi possível validar a sessão de recuperação."
+          );
+        }
+
+        showPasswordForm();
+
+        // Remove o código da barra de endereço.
+        history.replaceState(null, "", location.pathname);
+        return;
+      }
+
+      // Caso o SDK já tenha processado o link.
+      const { data, error } = await sb.auth.getSession();
+
+      if (error) throw error;
+
+      if (data.session && params.type === "recovery") {
+        showPasswordForm();
+        return;
+      }
+
+      throw new Error(
+        "O link expirou ou é inválido. Solicite um novo e-mail."
+      );
+
+    } catch (error) {
+      showStatus(error.message, "error");
+    }
+  }
+
+  // O evento PASSWORD_RECOVERY é emitido pelo Supabase
+  // quando a recuperação de senha é reconhecida.
+  sb.auth.onAuthStateChange((event, session) => {
+    if (event === "PASSWORD_RECOVERY" && session) {
+      showPasswordForm();
+    }
+  });
+
+  $("passwordForm").addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const password = $("password").value;
+    const confirmPassword = $("confirmPassword").value;
+
+    if (password.length < 8) {
+      showStatus(
+        "A senha precisa ter pelo menos 8 caracteres.",
+        "error"
+      );
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      showStatus("As senhas não coincidem.", "error");
+      return;
+    }
+
+    if (!recoveryAuthorized) {
+      showStatus(
+        "A sessão de recuperação não foi validada.",
+        "error"
+      );
+      return;
+    }
+
+    $("saveBtn").disabled = true;
+    showStatus("Salvando nova senha...");
+
+    try {
+      const { data, error } = await sb.auth.updateUser({
+        password
+      });
+
+      if (error) throw error;
+
+      if (!data.user) {
+        throw new Error(
+          "Não foi possível confirmar a alteração da senha."
+        );
+      }
+
+      $("passwordForm").classList.add("hide");
+      $("loginLink").classList.remove("hide");
+
+      showStatus(
+        "Senha alterada com sucesso!\n\n" +
+        "Agora acesse a importação do catálogo e entre com a nova senha.",
+        "success"
+      );
+
+      $("password").value = "";
+      $("confirmPassword").value = "";
+
+    } catch (error) {
+      showStatus(
+        "Não foi possível alterar a senha: " + error.message,
+        "error"
+      );
+    } finally {
+      $("saveBtn").disabled = false;
+    }
+  });
+
+  await initialize();
+})();
+</script>
+</body>
+</html>
+```
