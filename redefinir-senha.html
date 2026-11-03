@@ -1,118 +1,115 @@
-
-<!doctype html>
+```html
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="robots" content="noindex,nofollow">
-  <title>Redefinir senha | Blessed Store</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Redefinir senha · Blessed Store</title>
 
-  <style>
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      padding: 20px;
-      background: #050b1f;
-      color: #e6edff;
-      font: 16px system-ui, sans-serif;
-    }
-
-    main {
-      width: min(100%, 440px);
-      padding: 28px;
-      background: #0d1a3a;
-      border: 1px solid #24416d;
-      border-radius: 18px;
-    }
-
-    h1 { margin-top: 0; }
-
-    label {
-      display: block;
-      margin: 16px 0 6px;
-    }
-
-    input {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid #456084;
-      border-radius: 9px;
-      background: #07122b;
-      color: white;
-      font: inherit;
-    }
-
-    button {
-      width: 100%;
-      margin-top: 20px;
-      padding: 13px;
-      border: 0;
-      border-radius: 9px;
-      background: #38bdf8;
-      color: #061326;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    button:disabled { opacity: .5; }
-
-    #status {
-      margin-top: 18px;
-      padding: 12px;
-      background: #142747;
-      border-radius: 9px;
-      white-space: pre-wrap;
-    }
-
-    .error { background: #401e2b !important; }
-    .success { background: #123c32 !important; }
-    .hidden { display: none; }
-  </style>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  background:#070b1d;
+  color:#fff;
+  font:16px/1.5 system-ui,sans-serif;
+}
+.card{
+  width:100%;
+  max-width:440px;
+  background:#111a38;
+  border:1px solid #293d70;
+  border-radius:18px;
+  padding:28px;
+}
+h1{font-size:28px;margin:0 0 8px}
+p{color:#cbd5e1}
+label{display:block;font-weight:600;margin:18px 0 6px}
+input{
+  width:100%;
+  padding:13px;
+  border:1px solid #384967;
+  border-radius:9px;
+  background:#080e23;
+  color:white;
+  font:inherit;
+}
+button{
+  width:100%;
+  margin-top:20px;
+  padding:13px;
+  border:0;
+  border-radius:9px;
+  background:#2563eb;
+  color:white;
+  font:inherit;
+  font-weight:700;
+  cursor:pointer;
+}
+button:disabled{opacity:.5;cursor:wait}
+.status{
+  margin-top:18px;
+  padding:13px;
+  border-radius:9px;
+  background:#273047;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+}
+.success{background:#123b2c}
+.error{background:#4a202b}
+a{color:#93c5fd}
+.hide{display:none!important}
+</style>
 </head>
 
 <body>
-<main>
+<main class="card">
   <h1>Redefinir senha</h1>
   <p>Crie uma nova senha para sua conta Blessed Store.</p>
 
-  <form id="form" class="hidden">
-    <label for="password">Nova senha</label>
-    <input
-      id="password"
-      type="password"
-      minlength="8"
-      autocomplete="new-password"
-      required
-    >
+  <div id="formArea" class="hide">
+    <form id="passwordForm">
+      <label for="password">Nova senha</label>
+      <input id="password" type="password"
+        minlength="8" autocomplete="new-password"
+        required placeholder="Mínimo de 8 caracteres">
 
-    <label for="confirm">Confirme a senha</label>
-    <input
-      id="confirm"
-      type="password"
-      minlength="8"
-      autocomplete="new-password"
-      required
-    >
+      <label for="confirmPassword">Confirmar nova senha</label>
+      <input id="confirmPassword" type="password"
+        minlength="8" autocomplete="new-password"
+        required placeholder="Digite a senha novamente">
 
-    <button id="save" type="submit">Salvar nova senha</button>
-  </form>
+      <button id="saveBtn" type="submit">
+        Salvar nova senha
+      </button>
+    </form>
+  </div>
 
-  <div id="status">Validando link de recuperação...</div>
+  <div id="status" class="status">
+    Verificando link de recuperação...
+  </div>
+
+  <p id="loginLink" class="hide">
+    <a href="https://blessedstore-catalogo.netlify.app/importar.html">
+      Ir para a importação do catálogo
+    </a>
+  </p>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.min.js"></script>
 
 <script>
-(async function () {
+(async () => {
   const SUPABASE_URL =
     "https://wdetfogymnbnbhaulhxv.supabase.co";
 
   const SUPABASE_KEY =
-    "sb_publishable_2_SbUgb59iK3K-Vfc5xwqA_YVjfYK6";
+    "sb_publishable_2_SbUgb59iK3K-Vfc5xwqA_YVjfYKJ6";
 
   const sb = window.supabase.createClient(
     SUPABASE_URL,
@@ -120,115 +117,78 @@
     {
       auth: {
         detectSessionInUrl: true,
-        persistSession: true,
-        autoRefreshToken: true
+        flowType: "pkce"
       }
     }
   );
 
-  const form = document.getElementById("form");
-  const status = document.getElementById("status");
-  const save = document.getElementById("save");
+  const $ = id => document.getElementById(id);
 
-  let recoveryReady = false;
-
-  function mensagem(texto, tipo = "") {
-    status.textContent = texto;
-    status.className = tipo;
-    status.id = "status";
+  function showStatus(message, type = "") {
+    $("status").textContent = message;
+    $("status").className = "status " + type;
   }
 
-  function mostrarFormulario() {
-    recoveryReady = true;
-    form.classList.remove("hidden");
-    mensagem("Link validado! Escolha sua nova senha.");
-  }
+  let recoveryAuthorized = false;
 
-  // Verifica se o link de recuperação foi reconhecido
-  const { data, error } = await sb.auth.getSession();
-
-  if (error) {
-    mensagem("Erro ao validar o link: " + error.message, "error");
-    return;
-  }
-
-  if (data.session) {
-    mostrarFormulario();
-  } else {
-    const params = new URLSearchParams(
-      window.location.hash.substring(1)
+  // Detecta o tipo de recuperação tanto na query quanto no hash.
+  function hasRecoveryType() {
+    const query = new URLSearchParams(location.search);
+    const hash = new URLSearchParams(
+      location.hash.replace(/^#/, "")
     );
 
-    if (params.get("error_code")) {
-      mensagem(
-        "O link expirou ou é inválido. Solicite um novo e-mail.",
-        "error"
+    return (
+      query.get("type") === "recovery" ||
+      hash.get("type") === "recovery"
+    );
+  }
+
+  // O Supabase pode enviar um código PKCE na URL.
+  async function processRecoveryLink() {
+    const params = new URLSearchParams(location.search);
+    const code = params.get("code");
+
+    if (code) {
+      const { error } =
+        await sb.auth.exchangeCodeForSession(code);
+
+      if (error) {
+        throw new Error(
+          "O link de recuperação não pôde ser validado. " +
+          "Solicite um novo e-mail."
+        );
+      }
+
+      recoveryAuthorized = true;
+
+      // Remove o código da barra de endereço após validá-lo.
+      history.replaceState(
+        null,
+        "",
+        location.pathname
       );
-    } else {
-      mensagem(
-        "Abra esta página pelo link de recuperação enviado pelo Supabase.",
-        "error"
-      );
+    }
+
+    if (hasRecoveryType()) {
+      recoveryAuthorized = true;
     }
   }
 
-  // Detecta o evento de recuperação do Supabase
-  sb.auth.onAuthStateChange((event, session) => {
-    if (event === "PASSWORD_RECOVERY" && session) {
-      mostrarFormulario();
+  // O fluxo tradicional pode retornar tokens no hash.
+  sb.auth.onAuthStateChange((event) => {
+    if (event === "PASSWORD_RECOVERY") {
+      recoveryAuthorized = true;
+      checkRecovery();
     }
   });
 
-  // Atualiza a senha
-  form.addEventListener("submit", async function (event) {
-    event.preventDefault();
+  async function checkRecovery() {
+    try {
+      await processRecoveryLink();
 
-    if (!recoveryReady) {
-      mensagem("Sessão de recuperação inválida.", "error");
-      return;
-    }
+      const { data, error } = await sb.auth.getSession();
 
-    const senha = document.getElementById("password").value;
-    const confirmacao = document.getElementById("confirm").value;
+      if (error) throw error;
 
-    if (senha.length < 8) {
-      mensagem("A senha precisa ter pelo menos 8 caracteres.", "error");
-      return;
-    }
-
-    if (senha !== confirmacao) {
-      mensagem("As senhas não coincidem.", "error");
-      return;
-    }
-
-    save.disabled = true;
-    save.textContent = "Salvando...";
-
-    const { error } = await sb.auth.updateUser({
-      password: senha
-    });
-
-    save.disabled = false;
-    save.textContent = "Salvar nova senha";
-
-    if (error) {
-      mensagem("Erro ao alterar senha: " + error.message, "error");
-      return;
-    }
-
-    form.classList.add("hidden");
-
-    mensagem(
-      "Senha alterada com sucesso! Agora você pode entrar no painel com a nova senha.",
-      "success"
-    );
-  });
-
-})().catch(function (error) {
-  document.getElementById("status").textContent =
-    "Erro inesperado: " + error.message;
-});
-</script>
-
-</body>
-</html>
+      if (!data.session || !
